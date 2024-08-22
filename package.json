@@ -1,0 +1,14 @@
+{
+  "name": "smarturl",
+  "version": "1.0.0",
+  "description": "A simple URL shortener",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "protobufjs": "^7.3.3",
+    "uuid": "^10.0.0"
+  }
+}

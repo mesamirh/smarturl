@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Link {
+  string id = 1;
+  string original_url = 2;
+  int64 expiration_time = 3;
+  int32 visitor_limit = 4;
+  int32 visitor_count = 5;
+}
+
+message Links {
+  repeated Link links = 1;
+}
