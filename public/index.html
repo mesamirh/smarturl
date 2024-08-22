@@ -49,14 +49,13 @@
         .addEventListener("submit", async function (event) {
           event.preventDefault();
           const formData = new FormData(event.target);
-          const response = await fetch("/create_link", {
+          const response = await fetch("/api/create_link", {
             method: "POST",
             body: new URLSearchParams(formData),
           });
           const result = await response.json();
-          document.getElementById(
-            "shortUrl"
-          ).innerText = `${window.location.origin}${result.short_url}`;
+          const shortUrl = `${window.location.origin}${result.short_url}`;
+          document.getElementById("shortUrl").innerText = shortUrl;
           document.getElementById("modal").style.display = "block";
         });
 

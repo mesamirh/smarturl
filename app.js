@@ -2,31 +2,26 @@ const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 const path = require("path");
-const protobuf = require("protobufjs");
 const { body, validationResult } = require("express-validator");
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-const DATA_FILE = path.join(__dirname, "data.bin");
+const DATA_FILE = path.join(__dirname, "data.json");
 
 app.use(express.static(path.join(__dirname, "public")));
 
-const root = protobuf.loadSync(path.join(__dirname, "link.proto"));
-const Link = root.lookupType("Link");
-const Links = root.lookupType("Links");
-
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) {
-    return Links.create({ links: [] });
+    return { links: [] };
   }
   const data = fs.readFileSync(DATA_FILE);
-  return Links.decode(data);
+  return JSON.parse(data);
 }
 
 function saveData(data) {
-  const buffer = Links.encode(data).finish();
-  fs.writeFileSync(DATA_FILE, buffer);
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
 app.post(
@@ -37,34 +32,43 @@ app.post(
     body("visitorLimit").isInt({ min: 1 }).withMessage("Visitor limit must be a positive integer"),
   ],
   (req, res) => {
+    console.log("Received request to create link:", req.body);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log("Validation errors:", errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { originalUrl, duration, visitorLimit } = req.body;
     const id = uuidv4();
     const expirationTime = Date.now() + duration * 60 * 60 * 1000;
-    const newLink = Link.create({
+    const newLink = {
       id,
       original_url: originalUrl,
       expiration_time: expirationTime,
       visitor_limit: parseInt(visitorLimit, 10),
       visitor_count: 0,
-    });
+    };
 
     const data = loadData();
     data.links.push(newLink);
     saveData(data);
 
+    console.log("Link created successfully:", newLink);
     res.json({ short_url: `/api/r/${id}` });
   }
 );
 
 app.get("/api/r/:linkId", (req, res) => {
   const { linkId } = req.params;
+  console.log("Received request to retrieve link:", linkId);
+
   const data = loadData();
+  console.log("Loaded data:", data);
+
   const linkData = data.links.find(link => link.id === linkId);
+  console.log("Found link data:", linkData);
 
   if (!linkData) {
     return res.status(404).send("Link not found");
@@ -118,6 +122,11 @@ app.get("/api/r/:linkId", (req, res) => {
     saveData(data);
     res.redirect(linkData.original_url);
   }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
 
 module.exports = app;
